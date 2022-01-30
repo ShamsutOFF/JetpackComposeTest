@@ -8,33 +8,71 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
+
+private val TXT_SIZE = 22.sp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+
             val isAdded = remember { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
+            val scaffoldState = rememberScaffoldState()
+            val count = remember { mutableStateOf(0) }
+            //***For Drawer
+            val selectedItem = remember { mutableStateOf("") }
+            val items = listOf("Главная", "Контакты", "О приложении")
+            //***For Slider
+
             Scaffold(
+                scaffoldState = scaffoldState,
+                drawerContent = {
+                    for (item in items) {
+                        Text(
+                            text = item,
+                            fontSize = TXT_SIZE,
+                            modifier = Modifier.clickable {
+                                selectedItem.value = item
+                                scope.launch { scaffoldState.drawerState.close() }
+                            })
+                    }
+                },
                 topBar = {
                     TopAppBar() {
-                        IconButton(onClick = { /*TODO*/ }) {
+                        IconButton(onClick = {
+                            scope.launch { scaffoldState.drawerState.open() }
+                        }) {
                             Icon(Icons.Filled.Menu, "Меню")
                         }
-                        Text(text = "Мой Jetpack!", fontSize = 22.sp)
+                        Text(text = selectedItem.value, fontSize = TXT_SIZE)
                         Spacer(modifier = Modifier.weight(1f, true))
                         IconButton(onClick = { /*TODO*/ }) {
                             Icon(
@@ -81,18 +119,34 @@ class MainActivity : ComponentActivity() {
                 content = {
                     Column(
                         Modifier
-                            .padding(bottom = it.calculateBottomPadding())
+                            .padding(
+                                bottom = it.calculateBottomPadding(),
+                                start = dimensionResource(id = R.dimen.padding_small)
+                            )
 //                        .fillMaxSize()
 //                        .background(Color.Cyan)
                             .verticalScroll(rememberScrollState()),
                         Arrangement.SpaceEvenly
                     ) {
                         InfoIconButton()
+
+                        Image(
+                            bitmap = ImageBitmap.imageResource(R.drawable.audi),
+                            contentDescription = "Audi A5"
+                        )
+
+                        MyProgressBars()
                         BasketTextInfo(isAdded.value)
+                        MyButtonForSnack(scope, scaffoldState, count)
+                        MyButtonForAllert()
+                        MyButtonForDropDownMenu()
                         LoremIpsumText()
+                        MySwitch()
+                        MySlider()
                         IconToggleButton()
                         CheckBox()
                         TwoRadioButtons()
+                        MyFlowers()
                         SelectedColorBoxes()
                         LanguagesRadioGoup()
                         ClickableTextWithCounter()
@@ -101,9 +155,220 @@ class MainActivity : ComponentActivity() {
                         MyFloatingActionButton()
                         MyExtendedFloatingActionButton()
                     }
-
                 }
             )
+        }
+    }
+
+    @Composable
+    private fun MyFlowers() {
+        val resources = LocalContext.current.resources
+        var quantity = remember {
+            mutableStateOf("")
+        }
+        Column(
+            modifier = Modifier
+                .border(3.dp, Color.DarkGray)
+//                .padding(8.dp)
+//                .fillMaxWidth()
+                .padding(dimensionResource(id = R.dimen.padding_small))
+        ) {
+            Text(
+                text = resources.getQuantityString(
+                    R.plurals.flowers,
+                    if (quantity.value.isNotEmpty()) {
+                        quantity.value.toInt()
+                    } else 0,
+                    if (quantity.value.isNotEmpty()) {
+                        quantity.value.toInt()
+                    } else 0
+                ),
+                fontSize = 22.sp
+            )
+            OutlinedTextField(
+                value = quantity.value, { quantity.value = it },
+                textStyle = TextStyle(fontSize = 28.sp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        }
+    }
+
+    @Composable
+    private fun MyProgressBars() {
+        val scopePB = rememberCoroutineScope()
+        var progress by remember { mutableStateOf(0.0f) }
+        var isVisible by remember { mutableStateOf(false) }
+        Column() {
+            Text(text = "Статус: $progress", fontSize = TXT_SIZE)
+            Row() {
+                OutlinedButton(
+                    onClick = {
+                        scopePB.launch {
+                            isVisible = true
+                            progress = 0f
+                            while (progress < 1f) {
+                                progress += 0.1f
+                                delay(1_000L)
+                            }
+                        }
+                    },
+                    modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))
+                ) {
+                    Text(text = "Run", fontSize = TXT_SIZE)
+                }
+                OutlinedButton(
+                    onClick = {
+                        isVisible = false
+                        progress = 0f
+                    },
+                    modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))
+                ) {
+                    Text(text = "Stop", fontSize = 22.sp)
+                }
+            }
+            if (isVisible) {
+                Row() {
+                    CircularProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))
+                    )
+                    CircularProgressIndicator(modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small)))
+                }
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))
+                )
+                LinearProgressIndicator(modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small)))
+            } else {
+            }
+        }
+    }
+
+    @Composable
+    private fun MyButtonForDropDownMenu() {
+        var expanded by remember { mutableStateOf(false) }
+        var selectedOption by remember { mutableStateOf("") }
+        Column() {
+            Text(text = "Выбран пункт: $selectedOption")
+            Box() {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Показать меню")
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    offset = DpOffset(x = 20.dp, y = 10.dp)
+                ) {
+                    DropdownMenuItem(onClick = { selectedOption = "Copy" }) {
+                        Text(text = "Копировать")
+                    }
+                    DropdownMenuItem(onClick = {
+                        selectedOption = "Paste"
+                        expanded = false
+                    }) {
+                        Text(text = "Вставить")
+                    }
+                    Divider()
+                    DropdownMenuItem(onClick = { selectedOption = "Delete" }) {
+                        Text(text = "Удалить")
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun MyButtonForAllert() {
+        val openDialog = remember { mutableStateOf(false) }
+        OutlinedButton(
+            modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small)),
+            onClick = { openDialog.value = true }
+        ) {
+            Text("Удалить", fontSize = 22.sp)
+        }
+        if (openDialog.value) {
+            AlertDialog(
+                onDismissRequest = { openDialog.value = false },
+                title = { Text(text = "Подтверждение действия") },
+                text = { Text("Вы действительно хотите удалить выбранный элемент?") },
+                buttons = {
+                    Row(
+                        modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small)),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = { openDialog.value = false },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(dimensionResource(id = R.dimen.padding_small))
+                        ) {
+                            Text(text = "Удалить")
+                        }
+                        Button(
+                            onClick = { openDialog.value = false },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(dimensionResource(id = R.dimen.padding_small))
+                        ) {
+                            Text(text = "Отмена")
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    @Composable
+    private fun MySwitch() {
+        val checkedState = remember { mutableStateOf(false) }
+        val textColor = remember { mutableStateOf(Color.Unspecified) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = "Зеленый цвет", fontSize = 22.sp, color = textColor.value)
+            Switch(checked = checkedState.value, onCheckedChange = {
+                checkedState.value = it
+                if (checkedState.value) textColor.value = Color(0xff00695C)
+                else textColor.value = Color.Unspecified
+            })
+        }
+    }
+
+    @Composable
+    private fun MySlider() {
+        var sliderPosition by remember { mutableStateOf(0f) }
+        Text(text = "Текущее значение: ${sliderPosition.toInt()}", fontSize = 22.sp)
+        Slider(
+            value = sliderPosition,
+            valueRange = 0f..10f,
+            steps = 9,
+            onValueChange = { sliderPosition = it },
+            colors = SliderDefaults.colors(
+                thumbColor = colorResource(id = R.color.red),
+                activeTrackColor = Color(0xFFEF9A9A),
+                inactiveTrackColor = Color(0xFFFFEBEE),
+                inactiveTickColor = Color(0xFFEF9A9A),
+                activeTickColor = colorResource(id = R.color.red)
+            )
+        )
+    }
+
+    @Composable
+    private fun MyButtonForSnack(
+        scope: CoroutineScope,
+        scaffoldState: ScaffoldState,
+        count: MutableState<Int>
+    ) {
+        Button(
+            onClick = {
+                scope.launch {
+                    val result = scaffoldState.snackbarHostState.showSnackbar(
+                        "Count: ${count.value}",
+                        "add count"
+                    )
+                    if (result == SnackbarResult.ActionPerformed) count.value++
+                }
+            }
+        ) {
+            Text(text = "Click for Snack!", fontSize = 22.sp)
         }
     }
 }
@@ -190,7 +455,6 @@ private fun ClickableTextWithCounter() {
         fontSize = 28.sp,
         modifier = Modifier
             .clickable(bool, null, null) { count.value += 1 }
-//                            .clickable { count.value += 1 }
             .padding(30.dp)
     )
 }
@@ -232,7 +496,7 @@ private fun SelectedColorBoxes() {
         Row() {
             Box(
                 Modifier
-                    .padding(10.dp)
+                    .padding(dimensionResource(id = R.dimen.padding_small))
                     .size(100.dp)
                     .background(color = selectedOption.value)
             )
@@ -242,7 +506,7 @@ private fun SelectedColorBoxes() {
             val selected = selectedOption.value == color
             Box(
                 Modifier
-                    .padding(8.dp)
+                    .padding(dimensionResource(id = R.dimen.padding_small))
                     .size(60.dp)
                     .background(color = color)
                     .selectable(
@@ -283,12 +547,12 @@ private fun TwoRadioButtons() {
             RadioButton(
                 selected = !state.value,
                 onClick = { state.value = false },
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))
             )
             Text(
                 text = "Java",
                 Modifier
-                    .padding(8.dp)
+                    .padding(dimensionResource(id = R.dimen.padding_small))
                     .fillMaxHeight()
             )
         }
@@ -304,7 +568,7 @@ private fun CheckBox() {
         Checkbox(
             checked = checkedState.value,
             onCheckedChange = { checkedState.value = it },
-            modifier = Modifier.padding(5.dp)
+            modifier = Modifier.padding(dimensionResource(id = R.dimen.padding_small))
         )
         if (checkedState.value) {
             txt = "Выбрано"
@@ -340,13 +604,10 @@ private fun IconToggleButton() {
 @Composable
 private fun LoremIpsumText() {
     Text(
-        "What is Lorem Ipsum?\n" +
-                "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.\n" +
-                "\n" +
-                "...............",
+        text = stringResource(id = R.string.lorem_ipsum),
         fontSize = 22.sp,
         modifier = Modifier
-            .padding(30.dp)
+            .padding(dimensionResource(id = R.dimen.padding_small))
             .background(Color.Yellow)
             .requiredSize(200.dp)
             .verticalScroll(rememberScrollState())
