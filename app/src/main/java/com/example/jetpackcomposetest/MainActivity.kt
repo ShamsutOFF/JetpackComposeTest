@@ -1,13 +1,20 @@
 package com.example.jetpackcomposetest
 
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -16,16 +23,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.imageResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -117,6 +124,10 @@ class MainActivity : ComponentActivity() {
                 floatingActionButtonPosition = FabPosition.Center,
                 isFloatingActionButtonDocked = true,
                 content = {
+                    DisplayTvShows {
+                        startActivity(InfoActivity.intent(this, it))
+                    }
+//                    MyLazyColumn()
                     Column(
                         Modifier
                             .padding(
@@ -128,35 +139,93 @@ class MainActivity : ComponentActivity() {
                             .verticalScroll(rememberScrollState()),
                         Arrangement.SpaceEvenly
                     ) {
-                        InfoIconButton()
-
-                        Image(
-                            bitmap = ImageBitmap.imageResource(R.drawable.audi),
-                            contentDescription = "Audi A5"
-                        )
-
-                        MyProgressBars()
-                        BasketTextInfo(isAdded.value)
-                        MyButtonForSnack(scope, scaffoldState, count)
-                        MyButtonForAllert()
-                        MyButtonForDropDownMenu()
-                        LoremIpsumText()
-                        MySwitch()
-                        MySlider()
-                        IconToggleButton()
-                        CheckBox()
-                        TwoRadioButtons()
-                        MyFlowers()
-                        SelectedColorBoxes()
-                        LanguagesRadioGoup()
-                        ClickableTextWithCounter()
-                        MyWords()
-                        TextFieldWithIcons()
-                        MyFloatingActionButton()
-                        MyExtendedFloatingActionButton()
+//                        InfoIconButton()//
+//                        Image(
+//                            bitmap = ImageBitmap.imageResource(R.drawable.audi),
+//                            contentDescription = "Audi A5"
+//                        )
+//                        MyProgressBars()
+//                        BasketTextInfo(isAdded.value)
+//                        MyButtonForSnack(scope, scaffoldState, count)
+//                        MyButtonForAllert()
+//                        MyButtonForDropDownMenu()
+//                        LoremIpsumText()
+//                        MySwitch()
+//                        MySlider()
+//                        IconToggleButton()
+//                        CheckBox()
+//                        TwoRadioButtons()
+//                        MyFlowers()
+//                        SelectedColorBoxes()
+//                        LanguagesRadioGoup()
+//                        ClickableTextWithCounter()
+//                        MyWords()
+//                        TextFieldWithIcons()
+//                        MyFloatingActionButton()
+//                        MyExtendedFloatingActionButton()
                     }
                 }
             )
+        }
+    }
+
+    @Composable
+    private fun DisplayTvShows(selectedItem: (TvShow) -> Unit) {
+        val tvShows = remember { TvShowList.tvShows }
+        LazyColumn(contentPadding = PaddingValues(16.dp, 8.dp)) {
+            items(
+                items = tvShows,
+                itemContent = {
+                    TvShowListItem(tvShow = it, selectedItem)
+                }
+            )
+        }
+    }
+
+    @Composable
+    private fun MyLazyColumn() {
+        LazyColumn {
+            items(1) {
+                InfoIconButton()
+
+                Image(
+                    bitmap = ImageBitmap.imageResource(R.drawable.audi),
+                    contentDescription = "Audi A5"
+                )
+
+                MyProgressBars()
+//                        BasketTextInfo(isAdded.value)
+//                        MyButtonForSnack(scope, scaffoldState, count)
+                MyButtonForAllert()
+                MyButtonForDropDownMenu()
+                LoremIpsumText()
+
+                Card(
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .fillMaxWidth(),
+                    elevation = 10.dp,
+                    shape = RoundedCornerShape(corner = CornerSize(10.dp))
+                ) {
+                    Column() {
+                        MySwitch()
+                        MySlider()
+                    }
+
+                }
+                IconToggleButton()
+                CheckBox()
+                TwoRadioButtons()
+                MyFlowers()
+                SelectedColorBoxes()
+                LanguagesRadioGoup()
+                ClickableTextWithCounter()
+                MyWords()
+                TextFieldWithIcons()
+                MyFloatingActionButton()
+                MyExtendedFloatingActionButton()
+
+            }
         }
     }
 
